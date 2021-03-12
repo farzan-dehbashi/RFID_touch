@@ -1,51 +1,95 @@
 import os
 import pandas as pd
 import argparse
+import seaborn as sns
+import matplotlib.pyplot as plt
 
-def create_tag_csv_file(width):
+def create_df(width):
     columns = []
     for x in range(0, width):
         columns.append(str(x))
     df = pd.DataFrame(columns=columns)
     return df
 
+def check_dir(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+def plot_heatmap(df, directory, name):
+    print(type(df))
+    plt.figure(figsize=(5, 5))
+    sns.set_context('paper', font_scale=1.4)
+    print(df.head())
+    sns.heatmap(df)
+    plt.show()
+
+
 parser = argparse.ArgumentParser(description='configuration for the reader')
 parser.add_argument('-w', '--width', type=int, metavar='', required=True, help='sets width of the pad in cm (if width is 3 cm, 0,1,2 will be shown)')
 parser.add_argument('-H', '--height', type=int, metavar='', required=True, help='sets height of the pad in cm (if height is 3 cm, 0,1,2 will be shown)')
 parser.add_argument('-i', '--input', type=str, metavar='', required=True, help='sets input directory')
+parser.add_argument('-o', '--output', type=str, metavar='', required=True, help='sets output directory')
+parser.add_argument('-f', '--frequency', type=str, metavar='', required=True, help='sets frequency to be filtered (like: 916.750)')
+parser.add_argument('-s', '--printstd', type=bool, metavar='', required=False, help='prints std dataframe')
+parser.add_argument('-c', '--printcount', type=bool, metavar='', required=False, help='prints number of reads in that freq by that tag in that location dataframe')
+parser.add_argument('-m', '--printmean', type=bool, metavar='', required=False, help='prints mean dataframe')
 args = parser.parse_args()
 
 #default input params
 #TODO: make these flags:
 width = args.width
 height = args.height
-input_path = args.input
+input_dir = args.input
+output_dir = args.output
 tags = ['0x1111', '0x2222', '0x3333', '0x4444']
-freq = '916.750'
-output = 'parsed_logs'
+freq = args.frequency
+
 
 for tag in tags:
-    result_df = create_tag_csv_file(width) # contains an initial instance of the specific tag array csv file to store averages of that tag on it
+    #making statistical dfs
+    count_df = create_df(width)
+    mean_df = create_df(width) # contains an initial instance of the specific tag array csv file to store averages of that tag on it
+    std_df = create_df(width)
+    # min, max 25% and 50% and 75% can be also added
+
     for y in range(0, height):
         for x in range(0, width):
 
-            trials = os.listdir(input_path)
+            trials = os.listdir(input_dir)
             trial_name = str(x)+"_"+str(y)+".csv"
             if trial_name in trials:#file name exists in results
-                df = pd.read_csv(str(input_path)+"/"+trial_name, names=["EPCValue", "TimeStamp", "RunNum", "RSSI", "Reader", "Frequency", "Power", "Antenna"])
+                df = pd.read_csv(str(input_dir)+"/"+trial_name, names=["EPCValue", "TimeStamp", "RunNum", "RSSI", "Reader", "Frequency", "Power", "Antenna"])
                 filt = (df['EPCValue'] == tag) & (df['Frequency'] == freq)
                 filtered_df = df.loc[filt]
                 RSSIs = filtered_df['RSSI']
                 RSSIs = pd.to_numeric(RSSIs)
 
-                #TODO:calculate other statistics by flag
-                average = RSSIs.mean()
+                #making a df that contains a grid of all mean, std, count of each tag by different locations
+                count_df.at[y,str(x)] = RSSIs.describe().loc['count']
+                mean_df.at[y,str(x)] = RSSIs.describe().loc['mean']
+                std_df.at[y,str(x)] = RSSIs.describe().loc['std']
 
-                #TODO:plot timeline by flag
-                result_df.at[y,str(x)] = average
-
-    result_df.to_csv(str(output)+"/"+str(tag)+".csv")
 
     #TODO:add html maker
-    print(result_df.to_string())
-    print("#####################")
+    #prints results based on flags in terminal
+    if args.printcount == True:
+        print("count " + str(tag))
+        print(count_df.to_string())
+        check_dir(output_dir)
+        mean_df.to_csv(str(output_dir) + "/" + str(tag) + "_count.csv")
+        plot_heatmap(mean_df, "directory", "name")
+        print("*********************")
+    if args.printmean ==  True:
+        print("mean " + str(tag))
+        print(mean_df.to_string())
+        check_dir(output_dir)
+        mean_df.to_csv(str(output_dir) + "/" + str(tag) + "_mean.csv")
+        print("*********************")
+    if args.printstd == True:
+        print("std " + str(tag))
+        print(std_df.to_string())
+        check_dir(output_dir)
+        mean_df.to_csv(str(output_dir) + "/" + str(tag) + "_std.csv")
+    print("##########################################")
+
+
