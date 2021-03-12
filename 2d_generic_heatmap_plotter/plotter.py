@@ -15,13 +15,19 @@ def check_dir(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-def plot_heatmap(df, directory, name):
-    print(type(df))
-    plt.figure(figsize=(5, 5))
+def plot_heatmap(df, directory, file_name):
+
+    #TODO: the save and load should be removed and the problem with the index of the sheet should be resolved
+    df.to_csv("temp.csv")
+    df = pd.read_csv('temp.csv', index_col=0) #index col 0 is needed for seaborn
+    os.remove("temp.csv")
+    # end of todo
+
+    plt.figure(figsize=(7, 5))
     sns.set_context('paper', font_scale=1.4)
-    print(df.head())
-    sns.heatmap(df)
-    plt.show()
+    heat_map = sns.heatmap(df, annot=True, cmap='Blues', fmt='.3g')
+    heat_map.figure.savefig(str(directory)+"/"+str(file_name))
+
 
 
 parser = argparse.ArgumentParser(description='configuration for the reader')
@@ -30,9 +36,9 @@ parser.add_argument('-H', '--height', type=int, metavar='', required=True, help=
 parser.add_argument('-i', '--input', type=str, metavar='', required=True, help='sets input directory')
 parser.add_argument('-o', '--output', type=str, metavar='', required=True, help='sets output directory')
 parser.add_argument('-f', '--frequency', type=str, metavar='', required=True, help='sets frequency to be filtered (like: 916.750)')
-parser.add_argument('-s', '--printstd', type=bool, metavar='', required=False, help='prints std dataframe')
-parser.add_argument('-c', '--printcount', type=bool, metavar='', required=False, help='prints number of reads in that freq by that tag in that location dataframe')
-parser.add_argument('-m', '--printmean', type=bool, metavar='', required=False, help='prints mean dataframe')
+parser.add_argument('-s', '--printstd', action= 'store_true', required=False, help='prints std dataframe')
+parser.add_argument('-c', '--printcount', action= 'store_true', required=False, help='prints number of reads in that freq by that tag in that location dataframe')
+parser.add_argument('-m', '--printmean', action= 'store_true',required=False, help='prints mean dataframe')
 args = parser.parse_args()
 
 #default input params
@@ -44,6 +50,9 @@ output_dir = args.output
 tags = ['0x1111', '0x2222', '0x3333', '0x4444']
 freq = args.frequency
 
+#clears the output directory from previous runs:
+os.removedirs(output_dir)
+check_dir(output_dir)
 
 for tag in tags:
     #making statistical dfs
@@ -72,24 +81,24 @@ for tag in tags:
 
     #TODO:add html maker
     #prints results based on flags in terminal
-    if args.printcount == True:
+    if args.printcount:
         print("count " + str(tag))
         print(count_df.to_string())
-        check_dir(output_dir)
-        mean_df.to_csv(str(output_dir) + "/" + str(tag) + "_count.csv")
-        plot_heatmap(mean_df, "directory", "name")
+        check_dir(str(output_dir)+"/"+str(tag))
+        mean_df.to_csv(str(output_dir) + "/" + str(tag) + "/" + str(tag) + "_count.csv")
+        plot_heatmap(count_df, str(output_dir) + "/" + str(tag) , str(tag) + "_count")
         print("*********************")
-    if args.printmean ==  True:
+    if args.printmean:
         print("mean " + str(tag))
         print(mean_df.to_string())
-        check_dir(output_dir)
-        mean_df.to_csv(str(output_dir) + "/" + str(tag) + "_mean.csv")
+        check_dir(str(output_dir) + "/" + str(tag))
+        mean_df.to_csv(str(output_dir) + "/" + str(tag) + "/" + str(tag) + "_mean.csv")
         print("*********************")
-    if args.printstd == True:
+    if args.printstd:
         print("std " + str(tag))
         print(std_df.to_string())
-        check_dir(output_dir)
-        mean_df.to_csv(str(output_dir) + "/" + str(tag) + "_std.csv")
+        check_dir(str(output_dir) + "/" + str(tag))
+        mean_df.to_csv(str(output_dir) + "/" + str(tag) + "/" + str(tag) + "_std.csv")
     print("##########################################")
 
 
