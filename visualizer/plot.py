@@ -6,6 +6,7 @@ from dominate.tags import *
 import sys
 import os
 import matplotlib.pyplot as plt
+from datetime import datetime
 from matplotlib.font_manager import FontProperties
 import cv2
 
@@ -76,9 +77,16 @@ def plot(log, valid_epcs, name, tags): # plots all the files in a single log fil
         if this_epc_traces.empty == False:
 
             times = this_epc_traces['TimeStamp'].tolist()
+            
             RSSIs = this_epc_traces['RSSI'].tolist()
-            for i in range(0, len(times)):
+            
+            start_time = datetime.fromtimestamp(float(times[0]))
+            
+            for i in range(0, len(times)): #converts lists of time stamps and rssis to int and float
                 times[i] = float(times[i])
+                time_stamp = datetime.fromtimestamp(times[i])
+                times[i]= time_stamp - start_time # indicates each sample time to be sample timestamp - start time
+                times[i] = float(times [i].total_seconds())  #convert the result to seconds
                 RSSIs[i] = int(RSSIs[i])
 
                 ########problematic color
@@ -90,18 +98,17 @@ def plot(log, valid_epcs, name, tags): # plots all the files in a single log fil
             #(color)
             plt.scatter(times, RSSIs, label= epc, marker='o', color= color ) #plot the graph
 
-
-
+    plt.axis([-0.1, 10.1, -55, -41]) # should be removed
     plt.grid(b=True, which='major', color='#666666', linestyle=':')
     plt.ylabel('RSS (dBm)', fontfamily="Times", fontsize="18")
-    plt.xlabel('Time', fontfamily="Times", fontsize="18")
+    plt.xlabel('Time (S)', fontfamily="Times", fontsize="18")
     plt.legend()
     plt.savefig('./rfid_logs/'+str(name)+"/"+str(name)+".png", dpi = 500) #saves the file into the directories of the log files
     plt.clf()
 
-def plot_graph(log_name, tags, unit, x_offset, y_offset):
+def plot_graph(log_name, tags, unit, x_offset, y_offset): # this part of the code plots a dot on the raw graph provided
     #find the location
-    [y, x] = log_name.split('_')
+    [x, y] = log_name.split('_')
     x = int(x) * unit
     y = int(y) * unit
     ###################################
@@ -115,31 +122,67 @@ def make_html(directory, index):
     page_title = index
     doc = dominate.document(title=page_title)
 
-
-    #test = div(data_employee='101011')
-    #print(test)
     with doc.head:
         link(rel='stylesheet', href='style.css')
-    doc.add(h1("Experiment name: "+str(page_title)+":"))
+    doc.add(h1("Experiment name: "+str(page_title)))
 
+
+    logs_list = [] #all of the logs are stored here
     with os.scandir(str(directory)) as gesture_directories:
 
         for gesture_directory in gesture_directories:
             if os.path.isdir(gesture_directory):
+                logs_list.append(gesture_directory) #contains not sorted list of log file directories
 
-                log_name = str(gesture_directory.name)
-                [y, x] = log_name.split('_')
-                d = div(cls='plot')
-                d.add(h3("location of touch is at: x="+str(x)+" y="+str(y)))
+    log_names = os.listdir(str(directory)) #sorts the list of the names of the contents of the log file directory
+
+    ########## remove this later on
+    sudu_names = []
+    for item in log_names:
+        item = item.split("_")
+        
+        sudu_names.append(int(item[0]))
+    sudu_names.sort()
+    
+    i = 0
+    while i <len(sudu_names) :
+        sudu_names[i] = str(sudu_names[i])+"_0"
+        i = i +1
+
+    #log_names.sort()
+    log_names = sudu_names
+    ########## remove this later on
+    
+    
 
 
-                p = img(src="rfid_logs/"+str(log_name)+"/figure.png", figcaption = "setup")
-                d.add(p)
+    sorted_logs = [] #contains sorted order of all log files
+    for log_name in log_names: #filter outs type of file which is not directory in the directory of log files
+        if not ('.' in log_name): #if it is a direcotry
+            for log in logs_list:
+                if log.name == log_name:
+                    sorted_logs.append(log)
+                    break
 
-                p = img(src="rfid_logs/" + str(log_name)+"/" + str(log_name)+".png", figcaption = "RSS of the tags")
-                d.add(p)
 
-                doc.add(d)
+
+    for log in sorted_logs:
+        log_name = str(log.name)
+        [x, y] = log_name.split('_')  # to distinguish the location of touch point based on the naming of the file
+
+        trial = div(cls='plot') #this is a trial div in the html page which represent an individual trial of experiment
+        trial.add(h3("location of touch is at: x=" + str(x) + " y=" + str(y)))  # headline of the experiment is added
+
+        setup_graph = img(src="rfid_logs/" + str(log_name) + "/figure.png",
+                          figcaption="setup")  # experiment setup is plotted
+        trial.add(setup_graph)
+
+        log_graph = img(src="rfid_logs/" + str(log_name) + "/" + str(log_name) + ".png",
+                        figcaption="RSS of the tags")  # log file is plotted
+        trial.add(log_graph)
+
+        doc.add(trial)
+
     #print(str(doc))
 
 
@@ -162,10 +205,10 @@ if __name__ == "__main__":
         log_name = log_file.name #there is a bug that log file names mess up after clearing them
         log_file = clear(log_file, valid_epcs)#clear tags and just keep needed ones based on instructions.csv
         plot(log_file, valid_epcs, log_name, tags)#plots the log files
-        unit = 75 # unit of pixels
-        plot_graph(log_name, tags, unit, 160,265)
+        unit = 55 # unit of pixels to change location of touch point based on the name of the files and this unit
+        plot_graph(log_name, tags, unit, 160,265) #two last variables are the offset location of the finger
     ########################################
-    make_html(sys.argv[1], sys.argv[3])
+    make_html(sys.argv[1], sys.argv[3]) # arg1= log files directory and arg 3 is the name of the file
 
 
 
