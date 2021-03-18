@@ -3,6 +3,7 @@ import pandas as pd
 import argparse
 import seaborn as sns
 import matplotlib.pyplot as plt
+import shutil
 
 def create_df(width):
     columns = []
@@ -23,12 +24,13 @@ def plot_heatmap(df, directory, file_name):
     os.remove("temp.csv")
     # end of todo
 
+    style = 'Blues'
+    if args.style:
+        style = args.style
     plt.figure(figsize=(7, 5))
     sns.set_context('paper', font_scale=1.4)
-    heat_map = sns.heatmap(df, annot=True, cmap='Blues', fmt='.3g')
+    heat_map = sns.heatmap(df, annot=True, cmap=style, fmt='.3g')
     heat_map.figure.savefig(str(directory)+"/"+str(file_name))
-
-
 
 parser = argparse.ArgumentParser(description='configuration for the reader')
 parser.add_argument('-w', '--width', type=int, metavar='', required=True, help='sets width of the pad in cm (if width is 3 cm, 0,1,2 will be shown)')
@@ -39,6 +41,7 @@ parser.add_argument('-f', '--frequency', type=str, metavar='', required=True, he
 parser.add_argument('-s', '--printstd', action= 'store_true', required=False, help='prints std dataframe')
 parser.add_argument('-c', '--printcount', action= 'store_true', required=False, help='prints number of reads in that freq by that tag in that location dataframe')
 parser.add_argument('-m', '--printmean', action= 'store_true',required=False, help='prints mean dataframe')
+parser.add_argument('--style', type=str, metavar='', required=False, help='set the style of the seaborn heatmap e.g. viridis, Blues')
 args = parser.parse_args()
 
 #default input params
@@ -47,12 +50,8 @@ width = args.width
 height = args.height
 input_dir = args.input
 output_dir = args.output
-tags = ['0x1111', '0x2222', '0x3333', '0x4444']
+tags = ['0x2d041111', '0x2d4300600322e1dd26000000', '0x2d4200600322e08ecd000000', '0x00e200600322e13181000000']
 freq = args.frequency
-
-#clears the output directory from previous runs:
-os.removedirs(output_dir)
-check_dir(output_dir)
 
 for tag in tags:
     #making statistical dfs
@@ -73,13 +72,13 @@ for tag in tags:
                 RSSIs = filtered_df['RSSI']
                 RSSIs = pd.to_numeric(RSSIs)
 
+                print(RSSIs)
+
                 #making a df that contains a grid of all mean, std, count of each tag by different locations
                 count_df.at[y,str(x)] = RSSIs.describe().loc['count']
                 mean_df.at[y,str(x)] = RSSIs.describe().loc['mean']
                 std_df.at[y,str(x)] = RSSIs.describe().loc['std']
 
-
-    #TODO:add html maker
     #prints results based on flags in terminal
     if args.printcount:
         print("count " + str(tag))
@@ -93,12 +92,14 @@ for tag in tags:
         print(mean_df.to_string())
         check_dir(str(output_dir) + "/" + str(tag))
         mean_df.to_csv(str(output_dir) + "/" + str(tag) + "/" + str(tag) + "_mean.csv")
+        plot_heatmap(mean_df, str(output_dir) + "/" + str(tag), str(tag) + "_mean")
         print("*********************")
     if args.printstd:
         print("std " + str(tag))
         print(std_df.to_string())
         check_dir(str(output_dir) + "/" + str(tag))
         mean_df.to_csv(str(output_dir) + "/" + str(tag) + "/" + str(tag) + "_std.csv")
+        plot_heatmap(std_df, str(output_dir) + "/" + str(tag), str(tag) + "_std")
     print("##########################################")
 
 
