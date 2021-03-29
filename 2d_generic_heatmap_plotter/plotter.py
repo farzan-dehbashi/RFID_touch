@@ -50,7 +50,7 @@ width = args.width
 height = args.height
 input_dir = args.input
 output_dir = args.output
-tags = ['0x2d041111', '0x2d4300600322e1dd26000000', '0x2d4200600322e08ecd000000', '0x00e200600322e13181000000']
+tags = ['0x2d041111','0x2d042222','0x2d043333','0x2d0400600322e13181000000','0xbbbbbbbb','0xbebebebe']
 freq = args.frequency
 
 for tag in tags:
@@ -72,7 +72,7 @@ for tag in tags:
                 RSSIs = filtered_df['RSSI']
                 RSSIs = pd.to_numeric(RSSIs)
 
-                print(RSSIs)
+                #print(RSSIs)
 
                 #making a df that contains a grid of all mean, std, count of each tag by different locations
                 count_df.at[y,str(x)] = RSSIs.describe().loc['count']
