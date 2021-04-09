@@ -50,7 +50,7 @@ width = args.width
 height = args.height
 input_dir = args.input
 output_dir = args.output
-tags = ['0x2d041111','0x2d042222','0x2d043333','0x2d0400600322e13181000000','0xbbbbbbbb','0xbebebebe']
+tags = ['0x2d041111','0x2d042222','0x2d043333','0x2d0400600322e13181000000']
 freq = args.frequency
 
 for tag in tags:
