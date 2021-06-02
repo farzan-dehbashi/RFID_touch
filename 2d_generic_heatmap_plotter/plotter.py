@@ -37,7 +37,6 @@ parser.add_argument('-w', '--width', type=int, metavar='', required=True, help='
 parser.add_argument('-H', '--height', type=int, metavar='', required=True, help='sets height of the pad in cm (if height is 3 cm, 0,1,2 will be shown)')
 parser.add_argument('-i', '--input', type=str, metavar='', required=True, help='sets input directory')
 parser.add_argument('-o', '--output', type=str, metavar='', required=True, help='sets output directory')
-parser.add_argument('-f', '--frequency', type=str, metavar='', required=True, help='sets frequency to be filtered (like: 916.750)')
 parser.add_argument('-s', '--printstd', action= 'store_true', required=False, help='prints std dataframe')
 parser.add_argument('-c', '--printcount', action= 'store_true', required=False, help='prints number of reads in that freq by that tag in that location dataframe')
 parser.add_argument('-m', '--printmean', action= 'store_true',required=False, help='prints mean dataframe')
@@ -50,8 +49,8 @@ width = args.width
 height = args.height
 input_dir = args.input
 output_dir = args.output
-tags = ['0x2d041111','0x2d042222','0x2d043333','0x2d0400600322e13181000000']
-freq = args.frequency
+tags = ['0x00e200600322e19c64000000','0x00e200600322e0d5dd000000']
+
 
 for tag in tags:
     #making statistical dfs
@@ -67,7 +66,7 @@ for tag in tags:
             trial_name = str(x)+"_"+str(y)+".csv"
             if trial_name in trials:#file name exists in results
                 df = pd.read_csv(str(input_dir)+"/"+trial_name, names=["EPCValue", "TimeStamp", "RunNum", "RSSI", "Reader", "Frequency", "Power", "Antenna"])
-                filt = (df['EPCValue'] == tag) & (df['Frequency'] == freq)
+                filt = (df['EPCValue'] == tag)
                 filtered_df = df.loc[filt]
                 RSSIs = filtered_df['RSSI']
                 RSSIs = pd.to_numeric(RSSIs)
@@ -98,7 +97,7 @@ for tag in tags:
         print("std " + str(tag))
         print(std_df.to_string())
         check_dir(str(output_dir) + "/" + str(tag))
-        mean_df.to_csv(str(output_dir) + "/" + str(tag) + "/" + str(tag) + "_std.csv")
+        std_df.to_csv(str(output_dir) + "/" + str(tag) + "/" + str(tag) + "_std.csv")
         plot_heatmap(std_df, str(output_dir) + "/" + str(tag), str(tag) + "_std")
     print("##########################################")
 

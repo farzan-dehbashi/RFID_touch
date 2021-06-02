@@ -1,0 +1,4 @@
+TYPE	FIXED_LENGTH	LENGTH	START_TIME	END_TIME	RESUTLS_PATH	DESCRIPTION
+S	T	3			0_0	sleep for 10 seconds
+R	T	3			1_0	run for 10 seconds
+R	F				2_0	run and wait for user to complete the task
